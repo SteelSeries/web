@@ -61,7 +61,7 @@ func (ctx *Context) NotFound(message string) {
     ctx.ResponseWriter.Write([]byte(message))
 }
 
-//Sets the content type by extension, as defined in the mime package. 
+//Sets the content type by extension, as defined in the mime package.
 //For example, ctx.ContentType("json") sets the content-type to "application/json"
 func (ctx *Context) ContentType(ext string) {
     if !strings.HasPrefix(ext, ".") {
@@ -197,6 +197,15 @@ func (s *Server) addRoute(r string, method string, handler interface{}) {
         fv := reflect.ValueOf(handler)
         s.routes = append(s.routes, route{r, cr, method, fv})
     }
+}
+
+type handlerFunction struct {
+    r       string
+    handler http.Handler
+}
+
+func (s *Server) addHandlerFunction(r string, handler http.Handler) {
+    s.handlerFunctions = append(s.handlerFunctions, handlerFunction{r, handler})
 }
 
 type responseWriter struct {
@@ -371,10 +380,11 @@ var Config = &ServerConfig{
 var mainServer = NewServer()
 
 type Server struct {
-    Config *ServerConfig
-    routes []route
-    Logger *log.Logger
-    Env    map[string]interface{}
+    Config           *ServerConfig
+    routes           []route
+    handlerFunctions []handlerFunction
+    Logger           *log.Logger
+    Env              map[string]interface{}
     //save the listener so it can be closed
     l   net.Listener
 }
@@ -407,6 +417,10 @@ func (s *Server) Run(addr string) {
     mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
     mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
     mux.Handle("/", s)
+
+    for _, element := range s.handlerFunctions {
+        mux.Handle(element.r, element.handler)
+    }
 
     s.Logger.Printf("web.go serving %s\n", addr)
 
@@ -497,6 +511,11 @@ func Put(route string, handler interface{}) {
 //Adds a handler for the 'DELETE' http method.
 func Delete(route string, handler interface{}) {
     mainServer.addRoute(route, "DELETE", handler)
+}
+
+//Adds a generic handler function
+func HandlerFunc(route string, handler http.Handler) {
+    mainServer.addHandlerFunction(route, handler)
 }
 
 func (s *Server) SetLogger(logger *log.Logger) {
