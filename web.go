@@ -200,12 +200,22 @@ func (s *Server) addRoute(r string, method string, handler interface{}) {
 }
 
 type handlerFunction struct {
-    r       string
-    handler http.Handler
+    r              string
+    cr             *regexp.Regexp
+    handler        http.Handler
+    reflectHandler reflect.Value
 }
 
 func (s *Server) addHandlerFunction(r string, handler http.Handler) {
-    s.handlerFunctions = append(s.handlerFunctions, handlerFunction{r, handler})
+    cr, err := regexp.Compile(r)
+    if err != nil {
+        s.Logger.Printf("Error in route regex %q\n", r)
+        return
+    }
+
+    fv := reflect.ValueOf(handler)
+
+    s.handlerFunctions = append(s.handlerFunctions, handlerFunction{r: r, cr: cr, handler: handler, reflectHandler: fv})
 }
 
 type responseWriter struct {
@@ -272,6 +282,7 @@ func requiresContext(handlerType reflect.Type) bool {
     return false
 }
 
+// Iterates through all handler functions and routes defined, attempting to serve content
 func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
     requestPath := req.URL.Path
     ctx := Context{req, map[string]string{}, s, w}
@@ -310,6 +321,53 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
     //Set the default content-type
     ctx.SetHeader("Content-Type", "text/html; charset=utf-8", true)
 
+    // Iterate defined handler functions
+    for i := 0; i < len(s.handlerFunctions); i++ {
+        handlerFunction := s.handlerFunctions[i]
+        cr := handlerFunction.cr
+
+        if !cr.MatchString(requestPath) {
+            continue
+        }
+        match := cr.FindStringSubmatch(requestPath)
+
+        if len(match[0]) != len(requestPath) {
+            continue
+        }
+
+        var args []reflect.Value
+        handlerType := handlerFunction.reflectHandler.Type()
+        if requiresContext(handlerType) {
+            args = append(args, reflect.ValueOf(&ctx))
+        }
+        for _, arg := range match[1:] {
+            args = append(args, reflect.ValueOf(arg))
+        }
+
+        ret, err := s.safelyCall(handlerFunction.reflectHandler, args)
+        if err != nil {
+            //there was an error or panic while calling the handler
+            ctx.Abort(500, "Server Error")
+        }
+        if len(ret) == 0 {
+            return
+        }
+
+        sval := ret[0]
+
+        var content []byte
+
+        if sval.Kind() == reflect.String {
+            content = []byte(sval.String())
+        } else if sval.Kind() == reflect.Slice && sval.Type().Elem().Kind() == reflect.Uint8 {
+            content = sval.Interface().([]byte)
+        }
+        ctx.SetHeader("Content-Length", strconv.Itoa(len(content)), true)
+        ctx.Write(content)
+        return
+    }
+
+    // Iterate defined routes
     for i := 0; i < len(s.routes); i++ {
         route := s.routes[i]
         cr := route.cr
@@ -417,10 +475,6 @@ func (s *Server) Run(addr string) {
     mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
     mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
     mux.Handle("/", s)
-
-    for _, element := range s.handlerFunctions {
-        mux.Handle(element.r, element.handler)
-    }
 
     s.Logger.Printf("web.go serving %s\n", addr)
 
