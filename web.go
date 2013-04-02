@@ -209,7 +209,7 @@ type handlerFunction struct {
 func (s *Server) addHandlerFunction(r string, handler http.Handler) {
     cr, err := regexp.Compile(r)
     if err != nil {
-        s.Logger.Printf("Error in route regex %q\n", r)
+        s.Logger.Printf("Error in handler function regex %q\n", r)
         return
     }
 
@@ -336,15 +336,10 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
         }
 
         var args []reflect.Value
-        handlerType := handlerFunction.reflectHandler.Type()
-        if requiresContext(handlerType) {
-            args = append(args, reflect.ValueOf(&ctx))
-        }
-        for _, arg := range match[1:] {
-            args = append(args, reflect.ValueOf(arg))
-        }
+        args = append(args, reflect.ValueOf(w).Elem().Field(0)) // First argument to ServeHTTP should be the http.ResponseWriter from the ResponseWriter object passed in
+        args = append(args, reflect.ValueOf(req))               // Second argument to ServeHTTP should be the request object passed in
 
-        ret, err := s.safelyCall(handlerFunction.reflectHandler, args)
+        ret, err := s.safelyCall(handlerFunction.reflectHandler.MethodByName("ServeHTTP"), args)
         if err != nil {
             //there was an error or panic while calling the handler
             ctx.Abort(500, "Server Error")
