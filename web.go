@@ -107,7 +107,7 @@ func getCookieSig(key string, val []byte, timestamp string) string {
 func (ctx *Context) SetSecureCookie(name string, val string, age int64) {
     //base64 encode the val
     if len(ctx.Server.Config.CookieSecret) == 0 {
-        l4g.Trace("Secret Key for secure cookies has not been set. Please assign a cookie secret to web.Config.CookieSecret.")
+        l4g.Debug("Secret Key for secure cookies has not been set. Please assign a cookie secret to web.Config.CookieSecret.")
         return
     }
     var buf bytes.Buffer
@@ -465,7 +465,7 @@ func (s *Server) Run(addr string) {
     mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
     mux.Handle("/", s)
 
-    l4g.Info("web.go serving %s\n", addr)
+    l4g.Debug("web.go serving %s\n", addr)
 
     l, err := net.Listen("tcp", addr)
     if err != nil {
@@ -495,7 +495,7 @@ func Close() {
 
 func (s *Server) RunScgi(addr string) {
     s.initServer()
-    l4g.Info("web.go serving scgi %s\n", addr)
+    l4g.Debug("web.go serving scgi %s\n", addr)
     s.listenAndServeScgi(addr)
 }
 
@@ -507,7 +507,7 @@ func RunScgi(addr string) {
 //Runs the web application and serves scgi requests for this Server object.
 func (s *Server) RunFcgi(addr string) {
     s.initServer()
-    l4g.Info("web.go serving fcgi %s\n", addr)
+    l4g.Debug("web.go serving fcgi %s\n", addr)
     s.listenAndServeFcgi(addr)
 }
 
