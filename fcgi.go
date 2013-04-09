@@ -3,6 +3,7 @@ package web
 import (
     "bufio"
     "bytes"
+    l4g "code.google.com/p/log4go"
     "encoding/binary"
     "errors"
     "fmt"
@@ -237,13 +238,13 @@ func (s *Server) handleFcgiConnection(fd io.ReadWriteCloser) {
             break
         }
         if err != nil {
-            s.Logger.Println("FCGI Error", err.Error())
+            l4g.Error("FCGI Error", err.Error())
             break
         }
         content := make([]byte, h.ContentLength)
         _, err = io.ReadFull(br, content)
         if err != nil {
-            s.Logger.Println("FCGI Error", err.Error())
+            l4g.Error("FCGI Error", err.Error())
             break
         }
 
@@ -252,7 +253,7 @@ func (s *Server) handleFcgiConnection(fd io.ReadWriteCloser) {
             padding := make([]byte, h.PaddingLength)
             _, err = io.ReadFull(br, padding)
             if err != nil {
-                s.Logger.Println("FCGI Error", err.Error())
+                l4g.Error("FCGI Error", err.Error())
                 break
             }
         }
@@ -303,13 +304,13 @@ func (s *Server) listenAndServeFcgi(addr string) error {
     s.l = l
 
     if err != nil {
-        s.Logger.Println("FCGI listen error", err.Error())
+        l4g.Error("FCGI listen error", err.Error())
         return err
     }
     for {
         fd, err := l.Accept()
         if err != nil {
-            s.Logger.Println("FCGI accept error", err.Error())
+            l4g.Error("FCGI accept error", err.Error())
             break
         }
         go s.handleFcgiConnection(fd)

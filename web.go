@@ -2,12 +2,12 @@ package web
 
 import (
     "bytes"
+    l4g "code.google.com/p/log4go"
     "crypto/hmac"
     "crypto/sha1"
     "encoding/base64"
     "fmt"
     "io/ioutil"
-    "log"
     "mime"
     "net"
     "net/http"
@@ -107,7 +107,7 @@ func getCookieSig(key string, val []byte, timestamp string) string {
 func (ctx *Context) SetSecureCookie(name string, val string, age int64) {
     //base64 encode the val
     if len(ctx.Server.Config.CookieSecret) == 0 {
-        ctx.Server.Logger.Println("Secret Key for secure cookies has not been set. Please assign a cookie secret to web.Config.CookieSecret.")
+        l4g.Trace("Secret Key for secure cookies has not been set. Please assign a cookie secret to web.Config.CookieSecret.")
         return
     }
     var buf bytes.Buffer
@@ -187,7 +187,7 @@ type route struct {
 func (s *Server) addRoute(r string, method string, handler interface{}) {
     cr, err := regexp.Compile(r)
     if err != nil {
-        s.Logger.Printf("Error in route regex %q\n", r)
+        l4g.Error("Error in route regex %q\n", r)
         return
     }
 
@@ -209,7 +209,7 @@ type handlerFunction struct {
 func (s *Server) addHandlerFunction(r string, handler http.Handler) {
     cr, err := regexp.Compile(r)
     if err != nil {
-        s.Logger.Printf("Error in handler function regex %q\n", r)
+        l4g.Error("Error in handler function regex %q\n", r)
         return
     }
 
@@ -248,13 +248,13 @@ func (s *Server) safelyCall(function reflect.Value, args []reflect.Value) (resp 
             } else {
                 e = err
                 resp = nil
-                s.Logger.Println("Handler crashed with error", err)
+                l4g.Error("Handler crashed with error", err)
                 for i := 1; ; i += 1 {
                     _, file, line, ok := runtime.Caller(i)
                     if !ok {
                         break
                     }
-                    s.Logger.Println(file, line)
+                    l4g.Debug(file, line)
                 }
             }
         }
@@ -300,7 +300,7 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
         fmt.Fprintf(&logEntry, "\n\033[37;1mParams: %v\033[0m\n", ctx.Params)
     }
 
-    ctx.Server.Logger.Print(logEntry.String())
+    l4g.Debug(logEntry.String())
 
     //set some default headers
     ctx.SetHeader("Server", "web.go", true)
@@ -436,7 +436,6 @@ type Server struct {
     Config           *ServerConfig
     routes           []route
     handlerFunctions []handlerFunction
-    Logger           *log.Logger
     Env              map[string]interface{}
     //save the listener so it can be closed
     l   net.Listener
@@ -445,7 +444,6 @@ type Server struct {
 func NewServer() *Server {
     return &Server{
         Config: Config,
-        Logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
         Env:    map[string]interface{}{},
     }
 }
@@ -453,10 +451,6 @@ func NewServer() *Server {
 func (s *Server) initServer() {
     if s.Config == nil {
         s.Config = &ServerConfig{}
-    }
-
-    if s.Logger == nil {
-        s.Logger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
     }
 }
 
@@ -471,11 +465,11 @@ func (s *Server) Run(addr string) {
     mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
     mux.Handle("/", s)
 
-    s.Logger.Printf("web.go serving %s\n", addr)
+    l4g.Info("web.go serving %s\n", addr)
 
     l, err := net.Listen("tcp", addr)
     if err != nil {
-        log.Fatal("ListenAndServe:", err)
+        l4g.Error("ListenAndServe:", err)
     }
     s.l = l
     err = http.Serve(s.l, mux)
@@ -501,7 +495,7 @@ func Close() {
 
 func (s *Server) RunScgi(addr string) {
     s.initServer()
-    s.Logger.Printf("web.go serving scgi %s\n", addr)
+    l4g.Info("web.go serving scgi %s\n", addr)
     s.listenAndServeScgi(addr)
 }
 
@@ -513,7 +507,7 @@ func RunScgi(addr string) {
 //Runs the web application and serves scgi requests for this Server object.
 func (s *Server) RunFcgi(addr string) {
     s.initServer()
-    s.Logger.Printf("web.go serving fcgi %s\n", addr)
+    l4g.Info("web.go serving fcgi %s\n", addr)
     s.listenAndServeFcgi(addr)
 }
 
@@ -565,14 +559,6 @@ func Delete(route string, handler interface{}) {
 //Adds a generic handler function
 func HandlerFunc(route string, handler http.Handler) {
     mainServer.addHandlerFunction(route, handler)
-}
-
-func (s *Server) SetLogger(logger *log.Logger) {
-    s.Logger = logger
-}
-
-func SetLogger(logger *log.Logger) {
-    mainServer.Logger = logger
 }
 
 type ServerConfig struct {

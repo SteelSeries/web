@@ -2,6 +2,7 @@ package web
 
 import (
     "bytes"
+    l4g "code.google.com/p/log4go"
     "errors"
     "fmt"
     "io"
@@ -143,7 +144,7 @@ func (s *Server) handleScgiRequest(fd io.ReadWriteCloser) {
     req, err := readScgiRequest(&buf)
 
     if err != nil {
-        s.Logger.Println("SCGI read error", err.Error())
+        l4g.Error("SCGI read error", err.Error())
         return
     }
 
@@ -170,14 +171,14 @@ func (s *Server) listenAndServeScgi(addr string) error {
     s.l = l
 
     if err != nil {
-        s.Logger.Println("SCGI listen error", err.Error())
+        l4g.Error("SCGI listen error", err.Error())
         return err
     }
 
     for {
         fd, err := l.Accept()
         if err != nil {
-            s.Logger.Println("SCGI accept error", err.Error())
+            l4g.Error("SCGI accept error", err.Error())
             return err
         }
         go s.handleScgiRequest(fd)
