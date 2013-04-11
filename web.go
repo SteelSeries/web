@@ -107,7 +107,7 @@ func getCookieSig(key string, val []byte, timestamp string) string {
 func (ctx *Context) SetSecureCookie(name string, val string, age int64) {
     //base64 encode the val
     if len(ctx.Server.Config.CookieSecret) == 0 {
-        l4g.Debug("Secret Key for secure cookies has not been set. Please assign a cookie secret to web.Config.CookieSecret.")
+        l4g.Debug("Secret Key for secure cookies has not been set. Please assign a cookie secret to web.Config.CookieSecret.\r\n")
         return
     }
     var buf bytes.Buffer
@@ -187,7 +187,7 @@ type route struct {
 func (s *Server) addRoute(r string, method string, handler interface{}) {
     cr, err := regexp.Compile(r)
     if err != nil {
-        l4g.Error("Error in route regex %q\n", r)
+        l4g.Error("Error in route regex %q\r\n", r)
         return
     }
 
@@ -209,7 +209,7 @@ type handlerFunction struct {
 func (s *Server) addHandlerFunction(r string, handler http.Handler) {
     cr, err := regexp.Compile(r)
     if err != nil {
-        l4g.Error("Error in handler function regex %q\n", r)
+        l4g.Error("Error in handler function regex %q\r\n", r)
         return
     }
 
@@ -248,13 +248,13 @@ func (s *Server) safelyCall(function reflect.Value, args []reflect.Value) (resp 
             } else {
                 e = err
                 resp = nil
-                l4g.Error("Handler crashed with error", err)
+                l4g.Error("Handler crashed with error %v\r\n", err)
                 for i := 1; ; i += 1 {
                     _, file, line, ok := runtime.Caller(i)
                     if !ok {
                         break
                     }
-                    l4g.Debug(file, line)
+                    l4g.Debug(file, line, "\r\n")
                 }
             }
         }
@@ -300,7 +300,7 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
         fmt.Fprintf(&logEntry, "\n\033[37;1mParams: %v\033[0m\n", ctx.Params)
     }
 
-    l4g.Debug(logEntry.String())
+    l4g.Debug(logEntry.String(), "\r\n")
 
     //set some default headers
     ctx.SetHeader("Server", "web.go", true)
@@ -465,11 +465,11 @@ func (s *Server) Run(addr string) {
     mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
     mux.Handle("/", s)
 
-    l4g.Debug("web.go serving %s\n", addr)
+    l4g.Debug("web.go serving %s\r\n", addr)
 
     l, err := net.Listen("tcp", addr)
     if err != nil {
-        l4g.Error("ListenAndServe:", err)
+        l4g.Error("ListenAndServe: %v\r\n", err)
     }
     s.l = l
     err = http.Serve(s.l, mux)
@@ -495,7 +495,7 @@ func Close() {
 
 func (s *Server) RunScgi(addr string) {
     s.initServer()
-    l4g.Debug("web.go serving scgi %s\n", addr)
+    l4g.Debug("web.go serving scgi %s\r\n", addr)
     s.listenAndServeScgi(addr)
 }
 
@@ -507,7 +507,7 @@ func RunScgi(addr string) {
 //Runs the web application and serves scgi requests for this Server object.
 func (s *Server) RunFcgi(addr string) {
     s.initServer()
-    l4g.Debug("web.go serving fcgi %s\n", addr)
+    l4g.Debug("web.go serving fcgi %s\r\n", addr)
     s.listenAndServeFcgi(addr)
 }
 

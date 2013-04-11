@@ -144,7 +144,7 @@ func (s *Server) handleScgiRequest(fd io.ReadWriteCloser) {
     req, err := readScgiRequest(&buf)
 
     if err != nil {
-        l4g.Error("SCGI read error", err.Error())
+        l4g.Error("SCGI read error", err.Error(), "\r\n")
         return
     }
 
@@ -171,14 +171,14 @@ func (s *Server) listenAndServeScgi(addr string) error {
     s.l = l
 
     if err != nil {
-        l4g.Error("SCGI listen error", err.Error())
+        l4g.Error("SCGI listen error", err.Error(), "\r\n")
         return err
     }
 
     for {
         fd, err := l.Accept()
         if err != nil {
-            l4g.Error("SCGI accept error", err.Error())
+            l4g.Error("SCGI accept error", err.Error(), "\r\n")
             return err
         }
         go s.handleScgiRequest(fd)

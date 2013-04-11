@@ -238,13 +238,13 @@ func (s *Server) handleFcgiConnection(fd io.ReadWriteCloser) {
             break
         }
         if err != nil {
-            l4g.Error("FCGI Error", err.Error())
+            l4g.Error("FCGI Error", err.Error(), "\r\n")
             break
         }
         content := make([]byte, h.ContentLength)
         _, err = io.ReadFull(br, content)
         if err != nil {
-            l4g.Error("FCGI Error", err.Error())
+            l4g.Error("FCGI Error", err.Error(), "\r\n")
             break
         }
 
@@ -253,7 +253,7 @@ func (s *Server) handleFcgiConnection(fd io.ReadWriteCloser) {
             padding := make([]byte, h.PaddingLength)
             _, err = io.ReadFull(br, padding)
             if err != nil {
-                l4g.Error("FCGI Error", err.Error())
+                l4g.Error("FCGI Error", err.Error(), "\r\n")
                 break
             }
         }
@@ -304,13 +304,13 @@ func (s *Server) listenAndServeFcgi(addr string) error {
     s.l = l
 
     if err != nil {
-        l4g.Error("FCGI listen error", err.Error())
+        l4g.Error("FCGI listen error", err.Error(), "\r\n")
         return err
     }
     for {
         fd, err := l.Accept()
         if err != nil {
-            l4g.Error("FCGI accept error", err.Error())
+            l4g.Error("FCGI accept error", err.Error(), "\r\n")
             break
         }
         go s.handleFcgiConnection(fd)
