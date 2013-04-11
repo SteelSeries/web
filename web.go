@@ -248,13 +248,13 @@ func (s *Server) safelyCall(function reflect.Value, args []reflect.Value) (resp 
             } else {
                 e = err
                 resp = nil
-                l4g.Error("Handler crashed with error %v\r\n", err)
+                l4g.Error("Handler crashed with error: %v\r\n", err)
                 for i := 1; ; i += 1 {
                     _, file, line, ok := runtime.Caller(i)
                     if !ok {
                         break
                     }
-                    l4g.Debug(file, line, "\r\n")
+                    l4g.Debug("%s:%d\r\n", file, line)
                 }
             }
         }
@@ -300,7 +300,7 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
         fmt.Fprintf(&logEntry, "\n\033[37;1mParams: %v\033[0m\n", ctx.Params)
     }
 
-    l4g.Debug(logEntry.String(), "\r\n")
+    l4g.Debug("%s\r\n", logEntry.String())
 
     //set some default headers
     ctx.SetHeader("Server", "web.go", true)
