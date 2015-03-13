@@ -287,6 +287,9 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
     requestPath := req.URL.Path
     ctx := Context{req, map[string]string{}, s, w}
 
+    // Allow cross-origin requests
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+
     //log the request
     var logEntry bytes.Buffer
     fmt.Fprintf(&logEntry, "\033[32;1m%s %s\033[0m", req.Method, requestPath)
@@ -341,7 +344,7 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
 
         ret, err := s.safelyCall(handlerFunction.reflectHandler.MethodByName("ServeHTTP"), args)
         if err != nil {
-            //there was an error or panic while calling the handler
+            //l4g.Debug("there was an error or panic while calling the handler\r\n");
             ctx.Abort(500, "Server Error")
         }
         if len(ret) == 0 {
@@ -420,6 +423,13 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
 
     if indexPath := path.Join(path.Join(staticDir, requestPath), "index.htm"); fileExists(indexPath) {
         http.ServeFile(&ctx, ctx.Request, indexPath)
+        return
+    }
+
+    if req.Method == "OPTIONS" {
+        ctx.SetHeader("Content-Length", "0", true)
+        ctx.SetHeader("Access-Control-Allow-Origin", "*", true)
+        ctx.Write([]byte(""))
         return
     }
 
@@ -531,6 +541,11 @@ func (s *Server) Put(route string, handler interface{}) {
     s.addRoute(route, "PUT", handler)
 }
 
+//Adds a handler for the 'OPTIONS' http method.
+func (s *Server) Options(route string, handler interface{}) {
+    s.addRoute(route, "OPTIONS", handler)
+}
+
 //Adds a handler for the 'DELETE' http method.
 func (s *Server) Delete(route string, handler interface{}) {
     s.addRoute(route, "DELETE", handler)
@@ -549,6 +564,11 @@ func Post(route string, handler interface{}) {
 //Adds a handler for the 'PUT' http method.
 func Put(route string, handler interface{}) {
     mainServer.addRoute(route, "PUT", handler)
+}
+
+//Adds a handler for the 'OPTIONS' http method.
+func Options(route string, handler interface{}) {
+    mainServer.addRoute(route, "OPTIONS", handler)
 }
 
 //Adds a handler for the 'DELETE' http method.
