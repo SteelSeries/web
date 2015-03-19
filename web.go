@@ -289,6 +289,7 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
 
     // Allow cross-origin requests
     w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
     //log the request
     var logEntry bytes.Buffer
