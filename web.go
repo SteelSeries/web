@@ -287,10 +287,6 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
     requestPath := req.URL.Path
     ctx := Context{req, map[string]string{}, s, w}
 
-    // Allow cross-origin requests
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
     //log the request
     var logEntry bytes.Buffer
     fmt.Fprintf(&logEntry, "\033[32;1m%s %s\033[0m", req.Method, requestPath)
@@ -424,13 +420,6 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
 
     if indexPath := path.Join(path.Join(staticDir, requestPath), "index.htm"); fileExists(indexPath) {
         http.ServeFile(&ctx, ctx.Request, indexPath)
-        return
-    }
-
-    if req.Method == "OPTIONS" {
-        ctx.SetHeader("Content-Length", "0", true)
-        ctx.SetHeader("Access-Control-Allow-Origin", "*", true)
-        ctx.Write([]byte(""))
         return
     }
 
