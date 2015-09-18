@@ -358,6 +358,19 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
 			content = sval.Interface().([]byte)
 		}
 		ctx.SetHeader("Content-Length", strconv.Itoa(len(content)), true)
+
+		if len(ret) > 1 {
+			// Read status code if provided by handler
+			scval := ret[1]
+			if scval.Kind() == reflect.Int {
+				statusCode := int(scval.Int())
+				if statusCode != 200 {
+					ctx.Abort(statusCode, string(content))
+					return
+				}
+			}
+		}
+
 		ctx.Write(content)
 		return
 	}
@@ -408,6 +421,19 @@ func (s *Server) routeHandler(req *http.Request, w ResponseWriter) {
 			content = sval.Interface().([]byte)
 		}
 		ctx.SetHeader("Content-Length", strconv.Itoa(len(content)), true)
+
+		if len(ret) > 1 {
+			// Read status code if provided by handler
+			scval := ret[1]
+			if scval.Kind() == reflect.Int {
+				statusCode := int(scval.Int())
+				if statusCode != 200 {
+					ctx.Abort(statusCode, string(content))
+					return
+				}
+			}
+		}
+
 		ctx.Write(content)
 		return
 	}
