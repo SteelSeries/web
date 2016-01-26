@@ -2,11 +2,11 @@ package web
 
 import (
 	"bytes"
-	l4g "code.google.com/p/log4go"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	l4g "github.com/kylelemons/log4go"
 	"io/ioutil"
 	"mime"
 	"net"
