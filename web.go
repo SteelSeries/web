@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	l4g "github.com/kylelemons/log4go"
 	"io/ioutil"
 	"mime"
 	"net"
@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	l4g "github.com/kylelemons/log4go"
 )
 
 type ResponseWriter interface {
@@ -480,22 +482,44 @@ func (s *Server) initServer() {
 	}
 }
 
-//Runs the web application and serves http requests
-func (s *Server) Run(addr string) {
+func (s *Server) runHelper() (mux *http.ServeMux) {
 	s.initServer()
 
-	mux := http.NewServeMux()
+	mux = http.NewServeMux()
 	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/", s)
 
+	return
+}
+
+//Runs the web application and serves http requests
+func (s *Server) Run(addr string) {
+	mux := s.runHelper()
+
 	l4g.Debug("web.go serving %s\r\n", addr)
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		l4g.Error("ListenAndServe: %v\r\n", err)
+		return
+	}
+	s.l = l
+	err = http.Serve(s.l, mux)
+	s.l.Close()
+}
+
+func (s *Server) RunTLS(addr string, tlsConf *tls.Config) {
+	mux := s.runHelper()
+
+	l4g.Debug("web.go serving %s\r\n", addr)
+
+	l, err := tls.Listen("tcp", addr, tlsConf)
+	if err != nil {
+		l4g.Error("ListenAndServe: %v\r\n", err)
+		return
 	}
 	s.l = l
 	err = http.Serve(s.l, mux)
@@ -505,6 +529,10 @@ func (s *Server) Run(addr string) {
 //Runs the web application and serves http requests
 func Run(addr string) {
 	mainServer.Run(addr)
+}
+
+func RunTLS(addr string, tlsConf *tls.Config) {
+	mainServer.RunTLS(addr, tlsConf)
 }
 
 //Stops the web server
