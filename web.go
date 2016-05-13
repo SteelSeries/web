@@ -11,7 +11,6 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"net/http/pprof"
 	"net/url"
 	"os"
 	"path"
@@ -486,10 +485,6 @@ func (s *Server) runHelper() (mux *http.ServeMux) {
 	s.initServer()
 
 	mux = http.NewServeMux()
-	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
-	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/", s)
 
 	return
