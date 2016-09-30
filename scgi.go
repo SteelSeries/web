@@ -184,5 +184,4 @@ func (s *Server) listenAndServeScgi(addr string) error {
 		}
 		go s.handleScgiRequest(fd)
 	}
-	return nil
 }
