@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	l4g "github.com/kylelemons/log4go"
+	l4g "github.com/steelseries/log4go"
 	"io"
 	"io/ioutil"
 	"net"

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	l4g "github.com/kylelemons/log4go"
 	"io"
 	"io/ioutil"
 	"net"
@@ -12,6 +11,8 @@ import (
 	"net/http/cgi"
 	"strconv"
 	"strings"
+
+	l4g "github.com/steelseries/log4go"
 )
 
 type scgiConn struct {

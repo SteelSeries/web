@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	l4g "github.com/kylelemons/log4go"
+	l4g "github.com/steelseries/log4go"
 )
 
 type ResponseWriter interface {
